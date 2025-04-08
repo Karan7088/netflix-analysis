@@ -48,7 +48,7 @@ SELECT
     type,
     COUNT(*)
 FROM netflix
-GROUP BY 1;
+GROUP BY type;
 ```
 
 **Objective:** Determine the distribution of content types on Netflix.
@@ -101,7 +101,7 @@ FROM
         UNNEST(STRING_TO_ARRAY(country, ',')) AS country,
         COUNT(*) AS total_content
     FROM netflix
-    GROUP BY 1
+    GROUP BY country
 ) AS t1
 WHERE country IS NOT NULL
 ORDER BY total_content DESC
@@ -117,7 +117,7 @@ SELECT
     *
 FROM netflix
 WHERE type = 'Movie'
-ORDER BY SPLIT_PART(duration, ' ', 1)::INT DESC;
+ORDER BY cast(substring_index(duration, ' ', 1)as unsigned) DESC;
 ```
 
 **Objective:** Find the movie with the longest duration.
@@ -127,7 +127,7 @@ ORDER BY SPLIT_PART(duration, ' ', 1)::INT DESC;
 ```sql
 SELECT *
 FROM netflix
-WHERE TO_DATE(date_added, 'Month DD, YYYY') >= CURRENT_DATE - INTERVAL '5 years';
+WHERE year(date_added)>date_sub(date_added,interval 5 year);
 ```
 
 **Objective:** Retrieve content added to Netflix in the last 5 years.
@@ -136,14 +136,9 @@ WHERE TO_DATE(date_added, 'Month DD, YYYY') >= CURRENT_DATE - INTERVAL '5 years'
 
 ```sql
 SELECT *
-FROM (
-    SELECT 
-        *,
-        UNNEST(STRING_TO_ARRAY(director, ',')) AS director_name
-    FROM netflix
-) AS t
-WHERE director_name = 'Rajiv Chilaka';
-```
+FROM netflix
+WHERE director_name like '%Rajiv Chilaka%';
+```  
 
 **Objective:** List all content directed by 'Rajiv Chilaka'.
 
@@ -153,7 +148,7 @@ WHERE director_name = 'Rajiv Chilaka';
 SELECT *
 FROM netflix
 WHERE type = 'TV Show'
-  AND SPLIT_PART(duration, ' ', 1)::INT > 5;
+  AND cast(substring_index(duration,' ',1)as unsigned)>5;
 ```
 
 **Objective:** Identify TV shows with more than 5 seasons.
@@ -174,19 +169,14 @@ GROUP BY 1;
 return top 5 year with highest avg content release!
 
 ```sql
-SELECT 
+
+with cte as (SELECT 
     country,
     release_year,
-    COUNT(show_id) AS total_release,
-    ROUND(
-        COUNT(show_id)::numeric /
-        (SELECT COUNT(show_id) FROM netflix WHERE country = 'India')::numeric * 100, 2
-    ) AS avg_release
-FROM netflix
-WHERE country = 'India'
-GROUP BY country, release_year
-ORDER BY avg_release DESC
-LIMIT 5;
+    COUNT(show_id) AS total_release, FROM NETFLIX where country like '%india%' group by 1,2
+    ),
+select release_year,avg(total_release)as avg from cte order by avg desc limit 5;
+
 ```
 
 **Objective:** Calculate and rank years by the average number of content releases by India.
@@ -217,7 +207,7 @@ WHERE director IS NULL;
 SELECT * 
 FROM netflix
 WHERE casts LIKE '%Salman Khan%'
-  AND release_year > EXTRACT(YEAR FROM CURRENT_DATE) - 10;
+  AND release_year > EXTRACT(YEAR FROM CURDATE()) - 10;
 ```
 
 **Objective:** Count the number of movies featuring 'Salman Khan' in the last 10 years.
@@ -246,7 +236,7 @@ SELECT
 FROM (
     SELECT 
         CASE 
-            WHEN description ILIKE '%kill%' OR description ILIKE '%violence%' THEN 'Bad'
+            WHEN description LIKE '%kill%' OR description LIKE '%violence%' THEN 'Bad'
             ELSE 'Good'
         END AS category
     FROM netflix
@@ -265,19 +255,5 @@ GROUP BY category;
 
 This analysis provides a comprehensive view of Netflix's content and can help inform content strategy and decision-making.
 
-
-
-## Author - Zero Analyst
-
-This project is part of my portfolio, showcasing the SQL skills essential for data analyst roles. If you have any questions, feedback, or would like to collaborate, feel free to get in touch!
-
-### Stay Updated and Join the Community
-
-For more content on SQL, data analysis, and other data-related topics, make sure to follow me on social media and join our community:
-
-- **YouTube**: [Subscribe to my channel for tutorials and insights](https://www.youtube.com/@zero_analyst)
-- **Instagram**: [Follow me for daily tips and updates](https://www.instagram.com/zero_analyst/)
-- **LinkedIn**: [Connect with me professionally](https://www.linkedin.com/in/najirr)
-- **Discord**: [Join our community to learn and grow together](https://discord.gg/36h5f2Z5PK)
 
 Thank you for your support, and I look forward to connecting with you!
